@@ -848,6 +848,21 @@ BaseFormatPanel.prototype.createTitle = function(title)
 	return div;
 };
 
+
+/**
+ * Adds the given option to equipment.
+ */
+ BaseFormatPanel.prototype.createTitleEquipment = function(title)
+ {
+	 var div = document.createElement('div');
+	 div.style.padding = '0px 0px 6px 0px';
+	 //div.style.width = '200px';
+	 div.style.fontWeight = 'bold';
+	 mxUtils.write(div, title);
+	 
+	 return div;
+ };
+
 /**
  * 
  */
@@ -6951,6 +6966,71 @@ DiagramFormatPanel.prototype.addPaperSize = function(div)
 	graph.getModel().addListener(mxEvent.CHANGE, listener);
 	this.listeners.push({destroy: function() { graph.getModel().removeListener(listener); }});
 	
+	return div;
+};
+
+/**
+ * Adds the label menu items to the given menu and parent.
+ */
+
+DiagramFormatPanel.prototype.addEquipment = function(div) {
+
+	div.style.padding = '10px 5px';
+	div.style.fontFamily = 'monospace';
+	div.style.display = "flex";
+	div.style.flexWrap = "wrap";
+	div.style.justifyContent = "center";
+	div.style.flexDirection = "column";
+	div.style.textAlign = "center";
+
+	var idName = "Código Op."
+	var tensaoName = "Tensão";
+	var tipoName = "Tipo";
+	var equipamentoName = "Equip.";
+
+	var elements = [tensaoName, tipoName, idName, equipamentoName];
+	var element;
+
+	var title = document.createElement('div');
+	var space;
+
+	for (var i = 0; i < 4; i++) {
+
+		element = document.createElement('div');
+		element.style.width = "60px";
+		if (i == 2) {
+			element.style.width = "80px";
+		}
+		element.innerText = elements[i];
+		title.appendChild(element);
+		if (i != 3)
+		{
+			space = document.createElement('div');
+			space.innerText = "|";
+			title.appendChild(space);
+		}
+
+	}
+	title.style.padding = '0px 0px 6px 0px';
+	title.style.fontWeight = 'bold';
+	title.style.fontFamily = 'monospace';
+	title.style.display = "flex";
+	title.style.justifyContent = "space-between";
+	title.style.textAlign = "center";
+
+	div.appendChild(title);
+
+	return div;
+};
+
+/**
+ * Adds the label menu items to the given menu and parent.
+ */
+
+DiagramFormatPanel.prototype.addElement = function(div, element) {
+
+	div.appendChild(element);
+
 	return div;
 };
 

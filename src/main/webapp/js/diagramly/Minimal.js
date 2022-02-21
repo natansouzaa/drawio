@@ -77,11 +77,201 @@ EditorUi.initMinimalTheme = function()
 	    }
 	};
 
+	var equipmentPanel;
+
+	function addEquipments(graph, div)
+	{
+
+		var equipments = graph.getModel().cells;
+		var element;
+		var space;
+
+		for (id in equipments) {
+
+			try {
+				var valueObject = equipments[id].value;
+
+				if (valueObject.attributes != null)
+				{
+					var objectCodigoOperacional = valueObject.getAttribute("Código-Operacional");
+					var objectTensao = valueObject.getAttribute("Tensão");
+					var objectTipo = valueObject.getAttribute("Tipo");
+					var objectEquipamento = valueObject.getAttribute("Equipamento");
+					var elements = [objectTensao, objectTipo, objectCodigoOperacional, objectEquipamento];
+
+					var newEquipment = document.createElement('div');
+					newEquipment.id = id;
+					for (var i = 0; i < 4; i++) {
+
+						element = document.createElement('div');
+						element.style.width = "60px";
+						if (i == 2) {
+							element.style.width = "80px";
+						}
+						element.innerText = elements[i];
+						newEquipment.appendChild(element);
+						if (i != 3) {
+							space = document.createElement('div');
+							space.innerText = "|";
+							newEquipment.appendChild(space);
+						}
+
+					}
+					newEquipment.style.fontFamily = 'monospace';
+					newEquipment.style.display = "flex";
+					newEquipment.style.justifyContent = "space-between";
+					newEquipment.style.textAlign = "center";
+
+					div.appendChild(newEquipment);
+				}
+			} catch (e) {};
+
+		}
+
+	};
+
+	function refreshEquipments(graph, div)
+	{
+
+		var equipments = graph.getModel().cells;
+		var element;
+		var space;
+
+		for (id in equipments) {
+
+			try {
+				var valueObject = equipments[id].value;
+
+				if (valueObject.attributes != null)
+				{
+					var objectCodigoOperacional = valueObject.getAttribute("Código-Operacional");
+					var objectTensao = valueObject.getAttribute("Tensão");
+					var objectTipo = valueObject.getAttribute("Tipo");
+					var objectEquipamento = valueObject.getAttribute("Equipamento");
+					var elements = [objectTensao, objectTipo, objectCodigoOperacional, objectEquipamento];
+
+					//Add new equipment
+					if(div.children[id] == null || div.children[id].innerText == "")
+					{
+						var newEquipment;
+						if (div.children[id] == null)
+						{
+							newEquipment = document.createElement('div');
+							newEquipment.id = id;
+						}
+						else
+						{
+							newEquipment = document.getElementById(div.children[id].id);
+							newEquipment.id = div.children[id].id;
+						}
+						
+						for (var i = 0; i < 4; i++) {
+
+							element = document.createElement('div');
+							element.style.width = "60px";
+							if (i == 2) {
+								element.style.width = "80px";
+							}
+							element.innerText = elements[i];
+							newEquipment.appendChild(element);
+							if (i != 3) {
+								space = document.createElement('div');
+								space.innerText = "|";
+								newEquipment.appendChild(space);
+							}
+
+						}
+						newEquipment.style.fontFamily = 'monospace';
+						newEquipment.style.display = "flex";
+						newEquipment.style.justifyContent = "space-between";
+						newEquipment.style.textAlign = "center";
+
+						div.appendChild(newEquipment);
+					}
+					//Update equipment
+					else
+					{
+						var count = 0;
+						for (child in div.children[id].children) {
+
+							if (div.children[id].children[child].innerText != "|" && div.children[id].children[child].innerText != null)
+							{
+								div.children[id].children[child].innerText = elements[count];
+								count++;
+							}
+
+						}
+					}
+				}
+
+			} catch (e) {};
+
+		}
+
+		//Delete equipment
+		try {
+			if (div.children != null)
+			{
+				for (child in div.children) {
+
+					if (div.children[child].id != null && div.children[child].id != "")
+					{
+						if (equipments[div.children[child].id] == null)
+						{
+							const element = document.getElementById(div.children[child].id);
+							element.innerText = "";
+						}
+					}
+					
+				}
+			}
+		} catch (e) {};
+		
+	};
+
+	function toggleEquipment(ui, visible)
+	{
+		var graph = ui.editor.graph;
+	    graph.popupMenuHandler.hideMenu();
+		var marginBar = 300;
+
+	    if (ui.equipmentWindow == null)
+	    {
+			ui.equipmentWindow = new WrapperWindow(ui, "Equipamentos",
+				(urlParams['sketch'] == '1') ? Math.max(10, ui.diagramContainer.clientWidth - 241) :
+				Math.max(10, ui.diagramContainer.clientWidth - 248) - marginBar, 
+				urlParams['winCtrls'] == '1' && urlParams['sketch'] == '1'? 80 : 60,
+				290, Math.min(566, graph.container.clientHeight - 10), function(div)
+			{
+				equipmentPanel = BaseFormatPanel.prototype.createPanel();
+				DiagramFormatPanel.prototype.addEquipment(equipmentPanel);
+
+				addEquipments(graph, equipmentPanel);
+
+				div.appendChild(equipmentPanel);
+
+				return div;
+			});
+
+			ui.equipmentWindow.window.addListener(mxEvent.SHOW, mxUtils.bind(this, function()
+			{
+				ui.equipmentWindow.window.fit();
+			}));
+			
+			ui.equipmentWindow.window.minimumSize = new mxRectangle(0, 0, 240, 80);
+			ui.equipmentWindow.window.setVisible(true);
+	    }
+	    else
+	    {
+			ui.equipmentWindow.window.setVisible((visible != null) ?
+	        	visible : !ui.equipmentWindow.window.isVisible());
+	    }
+	};
+
 	function toggleFormat(ui, visible)
 	{
 		var graph = ui.editor.graph;
 	    graph.popupMenuHandler.hideMenu();
-	    
 	    if (ui.formatWindow == null)
 	    {
 			ui.formatWindow = new WrapperWindow(ui, mxResources.get('format'),
@@ -484,7 +674,7 @@ EditorUi.initMinimalTheme = function()
 			'td.mxWindowTitle { height: 22px !important; background: none !important; font-size: 13px !important; text-align:center !important; border-bottom:1px solid lightgray; }' +
 			'div.mxWindow, div.mxWindowTitle { background-image: none !important; background-color:' + (Editor.isDarkMode() ? Editor.darkColor : '#fff') + ' !important; }' +
 			'div.mxWindow { border-radius:5px; box-shadow: 0px 0px 2px #C0C0C0 !important;}' +
-			'div.mxWindow *:not(svg *) { font-family: inherit !important; }' +
+			'div.mxWindow *:not(svg *)' +
 			// Minimal Style UI
 			'html div.geVerticalHandle { position:absolute;bottom:0px;left:50%;cursor:row-resize;width:11px;height:11px;background:white;margin-bottom:-6px; margin-left:-6px; border: none; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.11), inset 0 -1px 0 0 rgba(0,0,0,.08), 0 1px 2px 0 rgba(0,0,0,.04); }' +
 			'html div.geInactivePage { background: ' + (Editor.isDarkMode() ? Editor.darkColor : 'rgb(249, 249, 249)') + ' !important; color: #A0A0A0 !important; } ' +
@@ -515,6 +705,17 @@ EditorUi.initMinimalTheme = function()
     {
     	return false;
     };
+
+	var editorGetGraphXml = Editor.prototype.getGraphXml;	
+
+	Editor.prototype.getGraphXml = function(ignoreSelection) {
+		ignoreSelection = (ignoreSelection != null) ? ignoreSelection : true;
+		var node = editorGetGraphXml.apply(this, arguments);
+
+		refreshEquipments(this.graph, equipmentPanel);
+
+		return node;
+    }
 
     /**
      * Sets the XML node for the current diagram.
@@ -835,6 +1036,19 @@ EditorUi.initMinimalTheme = function()
         }
     };
 
+	EditorUi.prototype.toggleEquipmentPanel = function(visible)
+    {
+        if (this.equipmentWindow != null)
+        {
+        	this.equipmentWindow.window.setVisible((visible != null) ?
+        		visible : !this.equipmentWindow.window.isVisible());
+        }
+        else
+        {
+        	toggleEquipment(this);
+        }
+    };
+
     DiagramFormatPanel.prototype.isMathOptionVisible = function()
     {
         return true;
@@ -1004,6 +1218,11 @@ EditorUi.initMinimalTheme = function()
         	toggleFormat(ui);
         }));
 		action.shortcut = ui.actions.get('formatPanel').shortcut;        
+
+		ui.actions.put('toggleEquipment', new Action('Equipamentos' + '...', function()
+        {
+        	toggleEquipment(ui);
+        }));    
 
         if (EditorUi.enablePlantUml && !ui.isOffline())
         {
@@ -1441,6 +1660,48 @@ EditorUi.initMinimalTheme = function()
 				if (mxEvent.getSource(evt) == this.formatWindow.window.title)
 				{
 					this.formatWindow.window.toggleMinimized();
+				}
+			}));
+		}
+	};
+
+	var equipmentWindowInitialized = false;
+
+	EditorUi.prototype.initEquipmentWindow = function()
+	{
+		if (!equipmentWindowInitialized)
+		{
+			equipmentWindowInitialized = true;
+			this.equipmentWindow.window.setClosable(false);
+
+			var toggleMinimized = this.equipmentWindow.window.toggleMinimized;
+			
+			this.equipmentWindow.window.toggleMinimized = function()
+			{
+				toggleMinimized.apply(this, arguments);
+				
+				if (this.minimized)
+				{
+					this.div.style.width = '90px';
+					this.table.style.width = '90px';
+					this.div.style.left = parseInt(this.div.style.left) + 150 + 'px';
+				}
+				else
+				{
+					
+					this.div.style.width = '240px';
+					this.table.style.width = '240px';
+					this.div.style.left = Math.max(0, parseInt(this.div.style.left) - 150) + 'px';
+				}
+				
+				this.fit();
+			};
+			
+			mxEvent.addListener(this.equipmentWindow.window.title, 'dblclick', mxUtils.bind(this, function(evt)
+			{
+				if (mxEvent.getSource(evt) == this.equipmentWindow.window.title)
+				{
+					this.equipmentWindow.window.toggleMinimized();
 				}
 			}));
 		}
@@ -2577,7 +2838,9 @@ EditorUi.initMinimalTheme = function()
 					mxResources.get('shapes'), ui.actions.get('image'), (small) ? Editor.shapesImage : null),
 	       			addMenuItem(mxResources.get('format'), ui.actions.get('toggleFormat').funct, null,
 	       			mxResources.get('format') + ' (' + ui.actions.get('formatPanel').shortcut + ')', ui.actions.get('image'),
-	   				(small) ? Editor.formatImage : null)],
+	   				(small) ? Editor.formatImage : null),
+					addMenuItem('Equipamentos', ui.actions.get('toggleEquipment').funct, null, 'Ver equipamentos',
+					ui.actions.get('image'), (small) ? Editor.shapesImage : null)],
 	   				(small) ? 60 : null);
 			
 		        var elt = addMenu('insert', true, (small) ? insertImage : null);
