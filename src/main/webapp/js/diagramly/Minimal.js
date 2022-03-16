@@ -714,6 +714,17 @@ EditorUi.initMinimalTheme = function()
 
 		refreshEquipments(this.graph, equipmentPanel);
 
+		var xmlProjeto = mxUtils.getPrettyXml(node);
+		
+		const urlParams = new URLSearchParams(window.location.search);
+		const idProjeto = urlParams.get("projeto");
+
+		var url = "http://127.0.0.1:8888/resteasy/projeto/desenho/" + idProjeto;
+
+		var requestPOST = new XMLHttpRequest();
+		requestPOST.open("PUT", url, true);
+		requestPOST.send(xmlProjeto);
+
 		return node;
     }
 
