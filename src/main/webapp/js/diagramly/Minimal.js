@@ -719,11 +719,53 @@ EditorUi.initMinimalTheme = function()
 		const urlParams = new URLSearchParams(window.location.search);
 		const idProjeto = urlParams.get("projeto");
 
-		var url = "http://127.0.0.1:8888/resteasy/projeto/desenho/" + idProjeto;
+		//Atualizar o desenho do projeto no SADI
+		var urlDesenho = "http://127.0.0.1:8888/resteasy/projeto/desenho/" + idProjeto;
 
-		var requestPOST = new XMLHttpRequest();
-		requestPOST.open("PUT", url, true);
-		requestPOST.send(xmlProjeto);
+		var requestDesenhoPUT = new XMLHttpRequest();
+		requestDesenhoPUT.open("PUT", urlDesenho, true);
+		requestDesenhoPUT.send(xmlProjeto);
+
+		//Atualizar os equipamentos do projeto no SADI
+		var urlEquipamento = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProjeto;
+
+		const parser = new DOMParser();
+		const xmlEquipamentos = parser.parseFromString(xmlProjeto, "application/xml");
+		var equipamentosXML = xmlEquipamentos.getElementsByTagName("object");
+
+		var requestEquipamentoGET = new XMLHttpRequest();
+		requestEquipamentoGET.open("GET", urlEquipamento, true);
+		requestEquipamentoGET.onreadystatechange = function(){
+
+			if ( requestEquipamentoGET.readyState == 4 && requestEquipamentoGET.status == 200 ) {
+
+				var equipamentosJson = JSON.parse(this.responseText);
+
+				for(let i = 0; i < equipamentosXML.length; i++) {
+
+					var atributoCodigoOperacional = equipamentosXML[i].getAttribute("Código-Operacional");
+
+					if (equipamentosJson[atributoCodigoOperacional] == null) {
+						var atributoTensao = equipamentosXML[i].getAttribute("Tensão");
+						var atributoTipo = equipamentosXML[i].getAttribute("Tipo");
+						var atributoEquipamento = equipamentosXML[i].getAttribute("Equipamento");
+
+						var equipamentoCompleto = { tensao: atributoTensao, tipo: atributoTipo,
+							codOperacional: atributoCodigoOperacional, equipamento: atributoEquipamento};
+
+						var jsonRequest = JSON.stringify(equipamentoCompleto);
+
+						var requestEquipamentoPOST = new XMLHttpRequest();
+						requestEquipamentoPOST.open("POST", urlEquipamento, true);
+						requestEquipamentoPOST.send(jsonRequest);
+					}
+
+				}
+
+			}
+
+		}
+		requestEquipamentoGET.send();
 
 		return node;
     }
