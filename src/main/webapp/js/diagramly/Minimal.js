@@ -744,20 +744,27 @@ EditorUi.initMinimalTheme = function()
 				for(let i = 0; i < equipamentosXML.length; i++) {
 
 					var atributoCodigoOperacional = equipamentosXML[i].getAttribute("Código-Operacional");
+					var atributoTensao = equipamentosXML[i].getAttribute("Tensão");
+					var atributoTipo = equipamentosXML[i].getAttribute("Tipo");
+					var atributoEquipamento = equipamentosXML[i].getAttribute("Equipamento");
+
+					var equipamentoCompleto = { tensao: atributoTensao, tipo: atributoTipo,
+						codOperacional: atributoCodigoOperacional, equipamento: atributoEquipamento};
+
+					var jsonRequest = JSON.stringify(equipamentoCompleto);
 
 					if (equipamentosJson[atributoCodigoOperacional] == null) {
-						var atributoTensao = equipamentosXML[i].getAttribute("Tensão");
-						var atributoTipo = equipamentosXML[i].getAttribute("Tipo");
-						var atributoEquipamento = equipamentosXML[i].getAttribute("Equipamento");
-
-						var equipamentoCompleto = { tensao: atributoTensao, tipo: atributoTipo,
-							codOperacional: atributoCodigoOperacional, equipamento: atributoEquipamento};
-
-						var jsonRequest = JSON.stringify(equipamentoCompleto);
 
 						var requestEquipamentoPOST = new XMLHttpRequest();
 						requestEquipamentoPOST.open("POST", urlEquipamento, true);
 						requestEquipamentoPOST.send(jsonRequest);
+
+					} else {
+
+						var requestEquipamentoPUT = new XMLHttpRequest();
+						requestEquipamentoPUT.open("PUT", urlEquipamento, true);
+						requestEquipamentoPUT.send(jsonRequest);
+						
 					}
 
 				}
