@@ -726,12 +726,44 @@ EditorUi.initMinimalTheme = function()
 		requestDesenhoPUT.open("PUT", urlDesenho, true);
 		requestDesenhoPUT.send(xmlProjeto);
 
-		//Atualizar os equipamentos do projeto no SADI
-		var urlEquipamento = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProjeto;
-
+		//Atualizar as conexões do projeto no SADI
+		var urlConexao = "http://127.0.0.1:8888/resteasy/projeto/conexao/" + idProjeto;
 		const parser = new DOMParser();
 		const xmlEquipamentos = parser.parseFromString(xmlProjeto, "application/xml");
+		var mxCellsXML = xmlEquipamentos.getElementsByTagName("mxCell");
 		var equipamentosXML = xmlEquipamentos.getElementsByTagName("object");
+
+		for (let i = 0; i < mxCellsXML.length; i++) {
+
+			var conexaoId = mxCellsXML[i].getAttribute("id");
+
+			var conexaoLegenda = mxCellsXML[i].getAttribute("value");
+
+			var conexaoSource = mxCellsXML[i].getAttribute("source");
+			var codOperacionalSource = getElementInXmlById(equipamentosXML, conexaoSource);
+
+			var conexaoTarget = mxCellsXML[i].getAttribute("target");
+			var codOperacionalTarget = getElementInXmlById(equipamentosXML, conexaoTarget);
+
+			if (conexaoId != null && conexaoSource != null && conexaoTarget != null) {
+				var conexaoCompleta = { id: conexaoId, legenda: conexaoLegenda,
+					source: codOperacionalSource.getAttribute("Código-Operacional"),
+					target: codOperacionalTarget.getAttribute("Código-Operacional")};
+
+				var jsonRequestConexao = JSON.stringify(conexaoCompleta);
+
+				console.log(jsonRequestConexao);
+
+				var requestConexaoPOST = new XMLHttpRequest();
+				requestConexaoPOST.open("POST", urlConexao, true);
+				requestConexaoPOST.send(jsonRequestConexao);
+			}
+
+		}
+
+
+		//Atualizar os equipamentos do projeto no SADI
+		var urlEquipamento = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProjeto;
 
 		var requestEquipamentoGET = new XMLHttpRequest();
 		requestEquipamentoGET.open("GET", urlEquipamento, true);
@@ -741,7 +773,7 @@ EditorUi.initMinimalTheme = function()
 
 				var equipamentosJson = JSON.parse(this.responseText);
 
-				for(let i = 0; i < equipamentosXML.length; i++) {
+				for (let i = 0; i < equipamentosXML.length; i++) {
 
 					var atributoCodigoOperacional = equipamentosXML[i].getAttribute("Código-Operacional");
 					var atributoTensao = equipamentosXML[i].getAttribute("Tensão");
@@ -751,19 +783,19 @@ EditorUi.initMinimalTheme = function()
 					var equipamentoCompleto = { tensao: atributoTensao, tipo: atributoTipo,
 						codOperacional: atributoCodigoOperacional, equipamento: atributoEquipamento};
 
-					var jsonRequest = JSON.stringify(equipamentoCompleto);
+					var jsonRequestEquipamento = JSON.stringify(equipamentoCompleto);
 
 					if (equipamentosJson[atributoCodigoOperacional] == null) {
 
 						var requestEquipamentoPOST = new XMLHttpRequest();
 						requestEquipamentoPOST.open("POST", urlEquipamento, true);
-						requestEquipamentoPOST.send(jsonRequest);
+						requestEquipamentoPOST.send(jsonRequestEquipamento);
 
 					} else {
 
 						var requestEquipamentoPUT = new XMLHttpRequest();
 						requestEquipamentoPUT.open("PUT", urlEquipamento, true);
-						requestEquipamentoPUT.send(jsonRequest);
+						requestEquipamentoPUT.send(jsonRequestEquipamento);
 						
 					}
 
@@ -776,6 +808,14 @@ EditorUi.initMinimalTheme = function()
 
 		return node;
     }
+
+	function getElementInXmlById(xml, id) {
+		for (let i = 0; i < xml.length; i++) {
+			if (xml[i].getAttribute("id") == id){
+				return xml[i];
+			}
+		}
+	}
 
     /**
      * Sets the XML node for the current diagram.
