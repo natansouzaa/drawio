@@ -721,99 +721,114 @@ EditorUi.initMinimalTheme = function()
 
 		//Atualizar o desenho do projeto no SADI
 		var urlDesenho = "http://127.0.0.1:8888/resteasy/projeto/desenho/" + idProjeto;
-
-		var requestDesenhoPUT = new XMLHttpRequest();
-		requestDesenhoPUT.open("PUT", urlDesenho, true);
-		requestDesenhoPUT.send(xmlProjeto);
+		makePutWithBody(urlDesenho, xmlProjeto);
 
 		//Atualizar as conexões do projeto no SADI
 		var urlConexao = "http://127.0.0.1:8888/resteasy/projeto/conexao/" + idProjeto;
-		const parser = new DOMParser();
-		const xmlEquipamentos = parser.parseFromString(xmlProjeto, "application/xml");
+
+		const xmlEquipamentos = parseStringToXml(xmlProjeto);
 		var mxCellsXML = xmlEquipamentos.getElementsByTagName("mxCell");
 		var equipamentosXML = xmlEquipamentos.getElementsByTagName("object");
 
 		for (let i = 0; i < mxCellsXML.length; i++) {
 
-			var conexaoId = mxCellsXML[i].getAttribute("id");
+			var jsonConnectionComplete = getAttributesFromConnectionAsJson(mxCellsXML[i], equipamentosXML);
 
-			var conexaoLegenda = mxCellsXML[i].getAttribute("value");
-
-			var conexaoSource = mxCellsXML[i].getAttribute("source");
-			var codOperacionalSource = getElementInXmlById(equipamentosXML, conexaoSource);
-
-			var conexaoTarget = mxCellsXML[i].getAttribute("target");
-			var codOperacionalTarget = getElementInXmlById(equipamentosXML, conexaoTarget);
-
-			if (conexaoId != null && conexaoSource != null && conexaoTarget != null) {
-				var conexaoCompleta = { id: conexaoId, legenda: conexaoLegenda,
-					source: codOperacionalSource.getAttribute("Código-Operacional"),
-					target: codOperacionalTarget.getAttribute("Código-Operacional")};
-
-				var jsonRequestConexao = JSON.stringify(conexaoCompleta);
-
-				console.log(jsonRequestConexao);
-
-				var requestConexaoPOST = new XMLHttpRequest();
-				requestConexaoPOST.open("POST", urlConexao, true);
-				requestConexaoPOST.send(jsonRequestConexao);
+			if (jsonConnectionComplete != null) {
+				makePostWithBody(urlConexao, conexaoCompleta);
 			}
 
 		}
-
 
 		//Atualizar os equipamentos do projeto no SADI
 		var urlEquipamento = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProjeto;
-
-		var requestEquipamentoGET = new XMLHttpRequest();
-		requestEquipamentoGET.open("GET", urlEquipamento, true);
-		requestEquipamentoGET.onreadystatechange = function(){
-
-			if ( requestEquipamentoGET.readyState == 4 && requestEquipamentoGET.status == 200 ) {
-
-				var equipamentosJson = JSON.parse(this.responseText);
-
-				for (let i = 0; i < equipamentosXML.length; i++) {
-
-					var atributoCodigoOperacional = equipamentosXML[i].getAttribute("Código-Operacional");
-					var atributoTensao = equipamentosXML[i].getAttribute("Tensão");
-					var atributoTipo = equipamentosXML[i].getAttribute("Tipo");
-					var atributoEquipamento = equipamentosXML[i].getAttribute("Equipamento");
-
-					var equipamentoCompleto = { tensao: atributoTensao, tipo: atributoTipo,
-						codOperacional: atributoCodigoOperacional, equipamento: atributoEquipamento};
-
-					var jsonRequestEquipamento = JSON.stringify(equipamentoCompleto);
-
-					if (equipamentosJson[atributoCodigoOperacional] == null) {
-
-						var requestEquipamentoPOST = new XMLHttpRequest();
-						requestEquipamentoPOST.open("POST", urlEquipamento, true);
-						requestEquipamentoPOST.send(jsonRequestEquipamento);
-
-					} else {
-
-						var requestEquipamentoPUT = new XMLHttpRequest();
-						requestEquipamentoPUT.open("PUT", urlEquipamento, true);
-						requestEquipamentoPUT.send(jsonRequestEquipamento);
-						
-					}
-
-				}
-
-			}
-
-		}
-		requestEquipamentoGET.send();
+		updateProjectEquipment(urlEquipamento, equipamentosXML);
 
 		return node;
     }
 
+	function updateProjectEquipment(url, originalXml) {
+		var requestGet = new XMLHttpRequest();
+		requestGet.open("GET", url, true);
+		requestGet.onreadystatechange = function(){
+			if (requestEquipamentoGET.readyState == 4 && requestEquipamentoGET.status == 200) {
+
+				var equipmentsJson = JSON.parse(this.responseText);
+
+				for (let i = 0; i < originalXml.length; i++) {
+
+					equipmentComplete = getAttributesFromEquipment(originalXml[i]);
+
+					if (equipmentsJson[equipmentComplete.attributeOperatingCode] == null) {
+						makePostWithBody(urlEquipamento, JSON.stringify(equipmentComplete));
+					} else {
+						makePutWithBody(urlEquipamento, JSON.stringify(equipmentComplete));
+					}
+
+				}
+			}
+		}
+		requestGet.send();
+	}
+
+	function makePutWithBody(url, body) {
+		var requestPut = new XMLHttpRequest();
+		requestPut.open("PUT", url, true);
+		requestPut.send(body);
+	}
+
+	function makePostWithBody(url, body) {
+		var requestPost = new XMLHttpRequest();
+		requestPost.open("POST", url, true);
+		requestPost.send(body);
+	}
+
+	function parseStringToXml(string) {
+		const parser = new DOMParser();
+		return parser.parseFromString(string, "application/xml");
+	}
+
+	function getAttributesFromConnectionAsJson(mxcell, originalXml) {
+		var connectionId = mxcell.getAttribute("id");
+
+		var connectionValue = mxcell.getAttribute("value");
+
+		var connectionSource = mxcell.getAttribute("source");
+		var operatingCodeSource = getElementInXmlById(originalXml, connectionSource);
+
+		var connectionTarget = mxcell.getAttribute("target");
+		var operatingCodeTarget = getElementInXmlById(originalXml, connectionTarget);
+
+		if (connectionId != null && connectionSource != null && connectionTarget != null) {
+			var connectionComplete = { id: connectionId, legenda: connectionValue,
+				source: operatingCodeSource.getAttribute("Código-Operacional"),
+				target: operatingCodeTarget.getAttribute("Código-Operacional")};
+
+			return JSON.stringify(connectionComplete);
+		} else {
+			return null;
+		}
+	}
+
+	function getAttributesFromEquipment(originalXml) {
+		var attributeOperatingCode = originalXml.getAttribute("Código-Operacional");
+		var attributeVoltage = originalXml.getAttribute("Tensão");
+		var attributeType = originalXml.getAttribute("Tipo");
+		var attributeEquipment = originalXml.getAttribute("Equipamento");
+
+		var equipmentComplete = { tensao: attributeVoltage, tipo: attributeType,
+			codOperacional: attributeOperatingCode, equipamento: attributeEquipment};
+
+		return equipmentComplete;
+	}
+
 	function getElementInXmlById(xml, id) {
 		for (let i = 0; i < xml.length; i++) {
+
 			if (xml[i].getAttribute("id") == id){
 				return xml[i];
 			}
+
 		}
 	}
 
