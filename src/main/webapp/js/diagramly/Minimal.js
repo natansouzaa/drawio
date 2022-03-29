@@ -714,35 +714,28 @@ EditorUi.initMinimalTheme = function()
 
 		refreshEquipments(this.graph, equipmentPanel);
 
-		var xmlProjeto = mxUtils.getPrettyXml(node);
+		var xmlProject = mxUtils.getPrettyXml(node);
 		
 		const urlParams = new URLSearchParams(window.location.search);
-		const idProjeto = urlParams.get("projeto");
+		const idProject = urlParams.get("projeto");
 
 		//Atualizar o desenho do projeto no SADI
-		var urlDesenho = "http://127.0.0.1:8888/resteasy/projeto/desenho/" + idProjeto;
-		makePutWithBody(urlDesenho, xmlProjeto);
+		var urlDraw = "http://127.0.0.1:8888/resteasy/projeto/desenho/" + idProject;
+		makePutWithBody(urlDraw, xmlProject);
 
 		//Atualizar as conexões do projeto no SADI
-		var urlConexao = "http://127.0.0.1:8888/resteasy/projeto/conexao/" + idProjeto;
+		var urlConnection = "http://127.0.0.1:8888/resteasy/projeto/conexao/" + idProject;
 
-		const xmlEquipamentos = parseStringToXml(xmlProjeto);
-		var mxCellsXML = xmlEquipamentos.getElementsByTagName("mxCell");
-		var equipamentosXML = xmlEquipamentos.getElementsByTagName("object");
+		const xmlEquipments = parseStringToXml(xmlProject);
+		var mxCellsXml = xmlEquipments.getElementsByTagName("mxCell");
+		var equipmentsXml = xmlEquipments.getElementsByTagName("object");
+		var jsonConnectionComplete = getJsonConnectionComplete(mxCellsXml, equipmentsXml);
 
-		for (let i = 0; i < mxCellsXML.length; i++) {
-
-			var jsonConnectionComplete = getAttributesFromConnectionAsJson(mxCellsXML[i], equipamentosXML);
-
-			if (jsonConnectionComplete != null) {
-				makePostWithBody(urlConexao, conexaoCompleta);
-			}
-
-		}
+		makePostWithBody(urlConnection, jsonConnectionComplete);
 
 		//Atualizar os equipamentos do projeto no SADI
-		var urlEquipamento = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProjeto;
-		updateProjectEquipment(urlEquipamento, equipamentosXML);
+		var urlEquipment = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProject;
+		updateProjectEquipment(urlEquipment, equipmentsXml);
 
 		return node;
     }
@@ -751,7 +744,7 @@ EditorUi.initMinimalTheme = function()
 		var requestGet = new XMLHttpRequest();
 		requestGet.open("GET", url, true);
 		requestGet.onreadystatechange = function(){
-			if (requestEquipamentoGET.readyState == 4 && requestEquipamentoGET.status == 200) {
+			if (requestGet.readyState == 4 && requestGet.status == 200) {
 
 				var equipmentsJson = JSON.parse(this.responseText);
 
@@ -760,15 +753,35 @@ EditorUi.initMinimalTheme = function()
 					equipmentComplete = getAttributesFromEquipment(originalXml[i]);
 
 					if (equipmentsJson[equipmentComplete.attributeOperatingCode] == null) {
-						makePostWithBody(urlEquipamento, JSON.stringify(equipmentComplete));
+						makePostWithBody(url, JSON.stringify(equipmentComplete));
 					} else {
-						makePutWithBody(urlEquipamento, JSON.stringify(equipmentComplete));
+						makePutWithBody(url, JSON.stringify(equipmentComplete));
 					}
 
 				}
 			}
 		}
 		requestGet.send();
+	}
+
+	function getJsonConnectionComplete(mxCells, equipments) {
+		var jsonConnectionComplete = "[";
+		for (let i = 0; i < mxCells.length; i++) {
+
+			var jsonConnection = getAttributesFromConnection(mxCells[i], equipments);
+			
+			if (jsonConnection != null) {
+				if (jsonConnectionComplete == "[") {
+					jsonConnectionComplete += jsonConnection;
+				} else {
+					jsonConnectionComplete += ", " + jsonConnection;
+				}
+			}
+
+		}
+		jsonConnectionComplete += "]";
+
+		return jsonConnectionComplete;
 	}
 
 	function makePutWithBody(url, body) {
@@ -788,7 +801,7 @@ EditorUi.initMinimalTheme = function()
 		return parser.parseFromString(string, "application/xml");
 	}
 
-	function getAttributesFromConnectionAsJson(mxcell, originalXml) {
+	function getAttributesFromConnection(mxcell, originalXml) {
 		var connectionId = mxcell.getAttribute("id");
 
 		var connectionValue = mxcell.getAttribute("value");
@@ -800,11 +813,11 @@ EditorUi.initMinimalTheme = function()
 		var operatingCodeTarget = getElementInXmlById(originalXml, connectionTarget);
 
 		if (connectionId != null && connectionSource != null && connectionTarget != null) {
-			var connectionComplete = { id: connectionId, legenda: connectionValue,
-				source: operatingCodeSource.getAttribute("Código-Operacional"),
-				target: operatingCodeTarget.getAttribute("Código-Operacional")};
+			var connectionComplete = `{"id": "${connectionId}", "legenda": "${connectionValue == null ? "" : connectionValue}", `
+				+ `"source": "${operatingCodeSource.getAttribute("Código-Operacional")}", `
+				+ `"target": "${operatingCodeTarget.getAttribute("Código-Operacional")}"}`;
 
-			return JSON.stringify(connectionComplete);
+			return connectionComplete;
 		} else {
 			return null;
 		}
