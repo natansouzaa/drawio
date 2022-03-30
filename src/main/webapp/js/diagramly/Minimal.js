@@ -731,7 +731,7 @@ EditorUi.initMinimalTheme = function()
 		var equipmentsXml = xmlEquipments.getElementsByTagName("object");
 		var jsonConnectionComplete = getJsonConnectionComplete(mxCellsXml, equipmentsXml);
 
-		makePostWithBody(urlConnection, jsonConnectionComplete);
+		makePutWithBody(urlConnection, jsonConnectionComplete);
 
 		//Atualizar os equipamentos do projeto no SADI
 		var urlEquipment = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProject;
