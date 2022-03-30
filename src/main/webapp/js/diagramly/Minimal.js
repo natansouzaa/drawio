@@ -721,6 +721,7 @@ EditorUi.initMinimalTheme = function()
 
 		//Atualizar o desenho do projeto no SADI
 		var urlDraw = "http://127.0.0.1:8888/resteasy/projeto/desenho/" + idProject;
+
 		makePutWithBody(urlDraw, xmlProject);
 
 		//Atualizar as conexões do projeto no SADI
@@ -735,34 +736,13 @@ EditorUi.initMinimalTheme = function()
 
 		//Atualizar os equipamentos do projeto no SADI
 		var urlEquipment = "http://127.0.0.1:8888/resteasy/projeto/equipamento/" + idProject;
-		updateProjectEquipment(urlEquipment, equipmentsXml);
+
+		var jsonEquipmentComplete = getJsonEquipmentComplete(equipmentsXml);
+		
+		makePutWithBody(urlEquipment, jsonEquipmentComplete);
 
 		return node;
     }
-
-	function updateProjectEquipment(url, originalXml) {
-		var requestGet = new XMLHttpRequest();
-		requestGet.open("GET", url, true);
-		requestGet.onreadystatechange = function(){
-			if (requestGet.readyState == 4 && requestGet.status == 200) {
-
-				var equipmentsJson = JSON.parse(this.responseText);
-
-				for (let i = 0; i < originalXml.length; i++) {
-
-					equipmentComplete = getAttributesFromEquipment(originalXml[i]);
-
-					if (equipmentsJson[equipmentComplete.attributeOperatingCode] == null) {
-						makePostWithBody(url, JSON.stringify(equipmentComplete));
-					} else {
-						makePutWithBody(url, JSON.stringify(equipmentComplete));
-					}
-
-				}
-			}
-		}
-		requestGet.send();
-	}
 
 	function getJsonConnectionComplete(mxCells, equipments) {
 		var jsonConnectionComplete = "[";
@@ -782,6 +762,24 @@ EditorUi.initMinimalTheme = function()
 		jsonConnectionComplete += "]";
 
 		return jsonConnectionComplete;
+	}
+
+	function getJsonEquipmentComplete(equipments) {
+		var jsonEquipmentComplete = "[";
+		for (let i = 0; i < equipments.length; i++) {
+
+			var jsonEquipment = getAttributesFromEquipment(equipments[i]);
+			
+			if (jsonEquipmentComplete == "[") {
+				jsonEquipmentComplete += jsonEquipment;
+			} else {
+				jsonEquipmentComplete += ", " + jsonEquipment;
+			}
+
+		}
+		jsonEquipmentComplete += "]";
+
+		return jsonEquipmentComplete;
 	}
 
 	function makePutWithBody(url, body) {
@@ -829,8 +827,8 @@ EditorUi.initMinimalTheme = function()
 		var attributeType = originalXml.getAttribute("Tipo");
 		var attributeEquipment = originalXml.getAttribute("Equipamento");
 
-		var equipmentComplete = { tensao: attributeVoltage, tipo: attributeType,
-			codOperacional: attributeOperatingCode, equipamento: attributeEquipment};
+		var equipmentComplete = `{"tensao": "${attributeVoltage}", "tipo": "${attributeType}", `
+			+ `"codOperacional": "${attributeOperatingCode}", "equipamento": "${attributeEquipment}"}`;
 
 		return equipmentComplete;
 	}
